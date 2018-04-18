@@ -1,0 +1,11 @@
+c:\users\melanie\documents\visual studio 2015\Projects\ProyectoEstructuras\ProyectoEstructuras\bin\Debug\ProyectoEstructuras.exe.config
+c:\users\melanie\documents\visual studio 2015\Projects\ProyectoEstructuras\ProyectoEstructuras\bin\Debug\ProyectoEstructuras.exe
+c:\users\melanie\documents\visual studio 2015\Projects\ProyectoEstructuras\ProyectoEstructuras\bin\Debug\ProyectoEstructuras.pdb
+c:\users\melanie\documents\visual studio 2015\Projects\ProyectoEstructuras\ProyectoEstructuras\bin\Debug\GMap.NET.Core.dll
+c:\users\melanie\documents\visual studio 2015\Projects\ProyectoEstructuras\ProyectoEstructuras\bin\Debug\GMap.NET.WindowsForms.dll
+c:\users\melanie\documents\visual studio 2015\Projects\ProyectoEstructuras\ProyectoEstructuras\obj\Debug\ProyectoEstructuras.Form1.resources
+c:\users\melanie\documents\visual studio 2015\Projects\ProyectoEstructuras\ProyectoEstructuras\obj\Debug\ProyectoEstructuras.Properties.Resources.resources
+c:\users\melanie\documents\visual studio 2015\Projects\ProyectoEstructuras\ProyectoEstructuras\obj\Debug\ProyectoEstructuras.csproj.GenerateResource.Cache
+c:\users\melanie\documents\visual studio 2015\Projects\ProyectoEstructuras\ProyectoEstructuras\obj\Debug\ProyectoEstructuras.exe
+c:\users\melanie\documents\visual studio 2015\Projects\ProyectoEstructuras\ProyectoEstructuras\obj\Debug\ProyectoEstructuras.pdb
+c:\users\melanie\documents\visual studio 2015\Projects\ProyectoEstructuras\ProyectoEstructuras\obj\Debug\ProyectoEstructuras.csprojResolveAssemblyReference.cache

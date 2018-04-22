@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using GMap.NET;
 using GMap.NET.MapProviders;
 using GMap.NET.WindowsForms;
 using GMap.NET.WindowsForms.Markers;
+using ProyectoEstructuras.Coleccion;
+using ProyectoEstructuras.datos;
+using ProyectoEstructuras.entidades;
 
 namespace ProyectoEstructuras
 {
@@ -24,6 +21,9 @@ namespace ProyectoEstructuras
         private Grafo grafito;
         private string markerName;
         private int markerPoss = 0;
+        Conector connector = null;
+        long[] path = new long[2];
+        Dictionary<long, Ubicacion> dictionary = new Dictionary<long, Ubicacion>();
 
         public Form1()
         {
@@ -89,12 +89,27 @@ namespace ProyectoEstructuras
             textBox2.Text = lat.ToString();
             textBox3.Text = lng.ToString();
 
+            var ubicacion = new Ubicacion(lat,lng);
+
+            connector.SaveLocation(ubicacion);
+
             mapita.Refresh();
             mapita.ReloadMap();
             //markerOverLay = new GMapOverlay("Marcador");
             var marker = new GMarkerGoogle(getPosicion(lat, lng), GMarkerGoogleType.green);
                 markerOverLay.Markers.Add(marker);
             markerOverLay.IsVisibile = true;
+            Console.WriteLine(String.Format("Marker {0} was clicked.", "hello"));
+        }
+
+        private void gmap_OnMarkerClick(GMapMarker marker, MouseEventArgs e)
+        {
+            var id = Int64.Parse(marker.Tag.ToString());
+            Ubicacion ubicacion;
+            dictionary.TryGetValue(id, out ubicacion);
+            //grafito.
+
+            Console.WriteLine(String.Format("Marker {0} was clicked.", marker.Tag));
         }
 
         private void button2_Click_1(object sender, EventArgs e)
@@ -125,27 +140,52 @@ namespace ProyectoEstructuras
             mapita.Zoom = 9;
             mapita.AutoScroll = true;
             this.markerOverLay = new GMapOverlay("Markers");
+            mapita.Overlays.Add(capRoute);
             mapita.Overlays.Add(this.markerOverLay);
-            mapita.Overlays.Add(new GMapOverlay("Routes"));
             grafito = new Grafo();
             // updateMarkers();
             mapita.Zoom = mapita.Zoom + 1;
             mapita.Zoom = mapita.Zoom - 1;
             textBox2.Enabled = false;
             textBox3.Enabled = false;
-            //agregar datos grid 2
-            /*dataGridView3.Rows.Add("San Pedro", "9.94", "-84.20");
-            dataGridView3.Rows.Add("Granadilla", "9.96", "-84.05");
-            dataGridView3.Rows.Add("Montes de Oca", "9.9", "-84.15");
-            dataGridView3.Rows.Add("Desamparados", "9.98", "-84.84");
-            dataGridView3.Rows.Add("San Miguel", "9.85", "-84.92");
+            mapita.OnMarkerClick += gmap_OnMarkerClick;
+            //mapita.MouseClick += mapita_MouseClick_1;
 
-            //agregar datos grid 1
-            dataGridView1.Rows.Add("San Pedro", "9.94", "-84.20");
-            dataGridView1.Rows.Add("Granadilla", "9.96", "-84.05");
-            dataGridView1.Rows.Add("Montes de Oca", "9.9", "-84.15");
-            dataGridView1.Rows.Add("Desamparados", "9.98", "-84.84");
-            dataGridView1.Rows.Add("San Miguel", "9.85", "-84.92");*/
+            connector = Conector.instance;
+            
+            foreach (var ubicacion in connector.GetLocations())
+            {
+                grafito.agregarVertice(ubicacion);
+
+                dictionary.Add(ubicacion.id, ubicacion);
+
+                var marker = new GMarkerGoogle(ubicacion.posicion, GMarkerGoogleType.green);
+                marker.Tag = ubicacion.id;
+                markerOverLay.Markers.Add(marker);
+                markerOverLay.IsVisibile = true;
+            }
+
+            foreach (var link in connector.GetPaths())
+            {
+
+                var list = new List<PointLatLng>();
+                Ubicacion ubicacion1;
+                Ubicacion ubicacion2;
+                dictionary.TryGetValue(link.origen, out ubicacion1);
+                dictionary.TryGetValue(link.destino, out ubicacion2);
+                list.Add(ubicacion1.posicion);
+                list.Add(ubicacion2.posicion);
+
+                var polygon = new GMapPolygon(list, "");
+
+                grafito.agregarPath(ubicacion1.descripcion, ubicacion2.descripcion, polygon.Distance.ToString());
+
+                
+                capRoute.Polygons.Add(polygon);
+            }
+
+            mapita.Refresh();
+            mapita.ReloadMap();
 
         }
         private void dataGridView1_CellClick_1(object sender, DataGridViewCellEventArgs e)

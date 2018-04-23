@@ -66,6 +66,7 @@
     <Compile Include="Coleccion\Nodo.cs" />
     <Compile Include="Coleccion\Path.cs" />
     <Compile Include="entidades\Ubicacion.cs" />
+    <Compile Include="CustomGMap\GmapMarkerWithLabel.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Form1.resx">

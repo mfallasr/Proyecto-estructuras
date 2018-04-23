@@ -8,6 +8,7 @@ using GMap.NET.WindowsForms.Markers;
 using ProyectoEstructuras.Coleccion;
 using ProyectoEstructuras.datos;
 using ProyectoEstructuras.entidades;
+using ProyectoEstructuras.CustomGMap;
 
 namespace ProyectoEstructuras
 {
@@ -21,9 +22,9 @@ namespace ProyectoEstructuras
         private Grafo grafito;
         private string markerName;
         private int markerPoss = 0;
-        Conector connector = null;
-        long[] path = new long[2];
-        Dictionary<long, Ubicacion> dictionary = new Dictionary<long, Ubicacion>();
+        private Conector connector = null;
+        private long[] path = new long[2];
+        private Dictionary<long, LocationMarker> dictionary = new Dictionary<long, LocationMarker>();
 
         public Form1()
         {
@@ -105,11 +106,17 @@ namespace ProyectoEstructuras
         private void gmap_OnMarkerClick(GMapMarker marker, MouseEventArgs e)
         {
             var id = Int64.Parse(marker.Tag.ToString());
-            Ubicacion ubicacion;
-            dictionary.TryGetValue(id, out ubicacion);
-            //grafito.
+            LocationMarker locationMarker;
+            dictionary.TryGetValue(id, out locationMarker);
+            List<Ubicacion> adyacencias = grafito.ObtenerVerticeAdyacentes(locationMarker.Location.descripcion);
+            dataGridView3.Rows.Clear();
+            foreach (var ubicacion1 in adyacencias)
+            {
+                dictionary.TryGetValue(ubicacion1.id, out locationMarker);
+                dataGridView3.Rows.Add("0", ubicacion1.id);
+            }
 
-            Console.WriteLine(String.Format("Marker {0} was clicked.", marker.Tag));
+            mapita.Refresh();
         }
 
         private void button2_Click_1(object sender, EventArgs e)
@@ -155,24 +162,29 @@ namespace ProyectoEstructuras
             
             foreach (var ubicacion in connector.GetLocations())
             {
-                grafito.agregarVertice(ubicacion);
-
-                dictionary.Add(ubicacion.id, ubicacion);
-
-                var marker = new GMarkerGoogle(ubicacion.posicion, GMarkerGoogleType.green);
+                var marker = new GmapMarkerWithLabel(ubicacion.posicion, ubicacion.descripcion, GMarkerGoogleType.green);
                 marker.Tag = ubicacion.id;
                 markerOverLay.Markers.Add(marker);
                 markerOverLay.IsVisibile = true;
+
+                grafito.agregarVertice(ubicacion);
+                dictionary.Add(ubicacion.id, new LocationMarker(ubicacion, marker));
             }
 
             foreach (var link in connector.GetPaths())
             {
 
-                var list = new List<PointLatLng>();
                 Ubicacion ubicacion1;
                 Ubicacion ubicacion2;
-                dictionary.TryGetValue(link.origen, out ubicacion1);
-                dictionary.TryGetValue(link.destino, out ubicacion2);
+                LocationMarker locationMarker;
+
+                var list = new List<PointLatLng>();
+                
+                dictionary.TryGetValue(link.origen, out locationMarker);
+                ubicacion1 = locationMarker.Location;
+                dictionary.TryGetValue(link.destino, out locationMarker);
+                ubicacion2 = locationMarker.Location;
+
                 list.Add(ubicacion1.posicion);
                 list.Add(ubicacion2.posicion);
 
@@ -205,14 +217,19 @@ namespace ProyectoEstructuras
         }
         private void aniadirPathAlGrid()
         {
-            dataGridView2.Rows.Clear();
-            var listOfLists = grafito.getAllPaths();
-            foreach (var list in listOfLists)
+            
+        }
+
+
+        private class LocationMarker
+        {
+            public Ubicacion Location { get; set; }
+            public GMapMarker Marker { set; get; }
+            public LocationMarker():this(null,null) { }
+            public LocationMarker(Ubicacion ubicacion, GMapMarker mapMarker)
             {
-                foreach (var path in list)
-                {
-                    dataGridView2.Rows.Add(path.original.getValor().descripcion, path.destino.getValor().descripcion, path.costo+"00", path.distancia+"km");
-                }
+                Location = ubicacion;
+                Marker = mapMarker;
             }
         }
     }

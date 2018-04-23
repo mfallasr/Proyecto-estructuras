@@ -9,8 +9,11 @@ namespace ProyectoEstructuras.Coleccion
 {
     public class Grafo
     {
+        private List<Path> PathList { get; set; }
         public Nodo cabeza;
-        public Grafo() { }
+        public Grafo() {
+            PathList = new List<Path>();
+        }
         public void agregarVertice(Ubicacion valor)
         {
             if (this.cabeza == null)
@@ -97,6 +100,7 @@ namespace ProyectoEstructuras.Coleccion
             Nodo origin = this.buscarVertice(llaveOrigen);
             Nodo destination = this.buscarVertice(llaveDestino);
             Path newPath = new Path(valor, origin, destination);
+            PathList.Add(newPath);
         }
         public void mostrarGrafo()
         {
@@ -111,15 +115,28 @@ namespace ProyectoEstructuras.Coleccion
             }
         }
 
-        public List<List<Path>> getAllPaths()
+        public List<Path> getAllPaths()
         {
-            var list = new List<List<Path>>();
-            var aux = this.cabeza;
-            while (aux != null)
-            {
-                list.Add(getPathsDelVertice(aux));
-                aux = aux.getSiguienteNodo();
-            }
+            return this.PathList;
+        }
+
+        public List<Ubicacion> ObtenerVerticeAdyacentes(string descripcion)
+        {
+            var list = new List<Ubicacion>();
+                foreach(var path in PathList)
+                {
+                    if (path.getOrigen().getValor().descripcion == descripcion)
+                    {
+                        if(path.destino != null)
+                        {
+                            list.Add(path.destino.valor);
+                        }
+                    } else if(path.destino != null && path.destino.getValor().descripcion == descripcion)
+                    {
+                        list.Add(path.getOrigen().getValor());
+                    }
+                }
+
             return list;
         }
 

@@ -10,163 +10,141 @@ namespace ProyectoEstructuras.Coleccion
     public class Grafo
     {
         private List<Path> PathList { get; set; }
-        public Nodo cabeza;
+        private Dictionary<long,Nodo> vertices { get; set; }
         public Grafo() {
             PathList = new List<Path>();
+            vertices = new Dictionary<long, Nodo>();
         }
+
         public void agregarVertice(Ubicacion valor)
         {
-            if (this.cabeza == null)
+            if(!vertices.ContainsKey(valor.id))
             {
-                this.cabeza = new Nodo(valor);
-            }
-            else
-            {
-                Nodo aux = cabeza;
-                while (aux != null)
-                {
-                    if (aux.getSiguienteNodo() == null)
-                    {
-                        aux.setSiguienteNodo(new Nodo(valor));
-                        break;
-                    }
-                    aux = aux.getSiguienteNodo();
-                }
+                var nodo = new Nodo(valor);
+                vertices.Add(valor.id, nodo);
             }
         }
 
         public void eliminarPath(string key)
         {
-            var aux = cabeza;
-            while (aux != null)
-            {
-                var path = aux.getSucessor();
-                if (path != null)
-                {
-                    if (path.valor == key)
-                    {
-                        aux.sucessor = null;
-                        aux.setSucessor(path.getSiguiente());
-                        break;
-                    }
-                    var pathToDel = path.getSiguiente();
-                    while (pathToDel != null)
-                    {
-                        if (pathToDel.valor == key)
-                        {
-                            path.setSiguiente(pathToDel.getSiguiente());
-                        }
-
-                        path = pathToDel;
-                        pathToDel = pathToDel.getSiguiente();
-                    }
-
-                }
-                aux = aux.getSiguienteNodo();
-            }
+            
         }
-        public GMapOverlay setRutas(GMapOverlay rutas)
-        {
-            var aux = this.cabeza;
-            while (aux != null)
-            {
-                var path = aux.getSucessor();
-                while (path != null)
-                {
-                    var direccion = this.agregarRuta(path.getOrigen().getValor().posicion, path.destino.getValor().posicion);
-                    GMapRoute route = new GMapRoute(direccion.Route, "Route");
-                    path.distancia= Math.Round(route.Distance);
-                    //path.costo = Math.Round(path.distancia* 0.1);
-                    path.costo = (path.distancia);
-                    rutas.Routes.Add(route);
-                    path = path.getSiguiente();
-                }
-
-                aux = aux.getSiguienteNodo();
-            }
-            return rutas;
-        }
-        public GDirections agregarRuta(PointLatLng lugarA, PointLatLng lugarB)
-        {
-
-            GDirections direccion;
-            var routes = GMapProviders.GoogleMap.GetDirections(out direccion, lugarA,
-                lugarB, false, false, false, false, false);
-            GMapRoute route = new GMapRoute(direccion.Route, "Route");
-            return direccion;
-        }
-        public void agregarPath(string llaveOrigen, string llaveDestino, string valor)
+        
+        public void agregarPath(long llaveOrigen, long llaveDestino, double valor)
         {
             Nodo origin = this.buscarVertice(llaveOrigen);
             Nodo destination = this.buscarVertice(llaveDestino);
             Path newPath = new Path(valor, origin, destination);
             PathList.Add(newPath);
         }
-        public void mostrarGrafo()
-        {
-            Nodo aux = cabeza;
-            while (aux != null)
-            {
-                if (aux.getSucessor() != null)
-                {
-                    Console.WriteLine(aux.mostrarPath());
-                }
-                aux = aux.getSiguienteNodo();
-            }
-        }
+
 
         public List<Path> getAllPaths()
         {
             return this.PathList;
         }
 
-        public List<Ubicacion> ObtenerVerticeAdyacentes(string descripcion)
+        public List<Path> ObtenerPathsAdyacentes(long id)
         {
-            var list = new List<Ubicacion>();
+            var list = new List<Path>();
                 foreach(var path in PathList)
                 {
-                    if (path.getOrigen().getValor().descripcion == descripcion)
+                    if (path.original.valor.id == id)
                     {
                         if(path.destino != null)
                         {
-                            list.Add(path.destino.valor);
+                            list.Add(path);
                         }
-                    } else if(path.destino != null && path.destino.getValor().descripcion == descripcion)
+                    } else if(path.destino != null && path.destino.valor.id== id)
                     {
-                        list.Add(path.getOrigen().getValor());
+                        list.Add(path);
                     }
                 }
 
             return list;
         }
 
+        public List<long> RutaMasCorta(long start, long finish)
+        {
+            var previous = new Dictionary<long, long>();
+            var distances = new Dictionary<long, int>();
+            var nodes = new List<long>();
+
+            List<long> path = null;
+
+            foreach (var vertice in vertices)
+            {
+                if (vertice.Key == start)
+                {
+                    distances[vertice.Key] = 0;
+                }
+                else
+                {
+                    distances[vertice.Key] = int.MaxValue;
+                }
+
+                nodes.Add(vertice.Key);
+            }
+
+            while (nodes.Count != 0)
+            {
+                nodes.Sort((x, y) => distances[x] - distances[y]);
+
+                var smallest = nodes[0];
+                nodes.Remove(smallest);
+
+                if (smallest == finish)
+                {
+                    path = new List<long>();
+                    while (previous.ContainsKey(smallest))
+                    {
+                        path.Add(smallest);
+                        smallest = previous[smallest];
+                    }
+
+                    break;
+                }
+
+                if (distances[smallest] == int.MaxValue)
+                {
+                    break;
+                }
+
+                foreach (var neighbor in vertices[smallest].vecinos)
+                {
+                    var linkPath = BuscarPath(vertices[smallest].valor.id, neighbor.valor.id);
+                    var alt = distances[smallest] + linkPath.valor;
+                    if (alt < distances[neighbor.valor.id])
+                    {
+                        distances[neighbor.valor.id] = (int)alt;
+                        previous[neighbor.valor.id] = smallest;
+                    }
+                }
+            }
+
+            return path;
+        }
+
         public void RemovePath(String key)
         {
 
         }
-        public List<Path> getPathsDelVertice(Nodo verice)
+
+        public Path BuscarPath(long llave1, long llave2)
         {
-            var list = new List<Path>();
-            var aux = verice.getSucessor();
-            while (aux != null)
+            foreach(var path in PathList)
             {
-                list.Add(aux);
-                aux = aux.getSiguiente();
-            }
-            return list;
-        }
-        public Nodo buscarVertice(string llave)
-        {
-            Nodo aux = cabeza;
-            while (aux != null)
-            {
-                if (aux.getValor().descripcion == llave)
+                if((path.original.valor.id == llave1 || path.original.valor.id == llave2) &&
+                    (path.destino.valor.id == llave1 || path.destino.valor.id == llave2))
                 {
-                    return aux;
+                    return path;
                 }
-                aux = aux.getSiguienteNodo();
             }
             return null;
+        }
+        public Nodo buscarVertice(long llave)
+        {
+            return vertices[llave];
         }
     }
 }

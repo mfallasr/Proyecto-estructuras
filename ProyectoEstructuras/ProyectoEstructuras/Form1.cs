@@ -9,33 +9,30 @@ using ProyectoEstructuras.Coleccion;
 using ProyectoEstructuras.datos;
 using ProyectoEstructuras.entidades;
 using ProyectoEstructuras.CustomGMap;
+using System.Drawing;
 
 namespace ProyectoEstructuras
 {
     public partial class Form1 : Form
     {
-        private GMapOverlay markerOverLay;
-        private double latInicial = 9.924264;
-        private double longInicial = -84.1909738;
-        private int posA, posB;
+        private GMapOverlay markerOverLay = new GMapOverlay("Markers");
+        private GMapOverlay markerHighlight = new GMapOverlay("Highlight");
+        private GMapOverlay pathsLayer = new GMapOverlay("Paths");
         private GMapOverlay capRoute = new GMapOverlay("Capa de la ruta");
         private Grafo grafito;
-        private string markerName;
-        private int markerPoss = 0;
         private Conector connector = null;
-        private long[] path = new long[2];
         private Dictionary<long, LocationMarker> dictionary = new Dictionary<long, LocationMarker>();
+
+        private double latInicial = 9.924264;
+        private double longInicial = -84.1909738;
+
+        private long[] path = new long[2];
+        
+        private int posA, posB;
 
         public Form1()
         {
             InitializeComponent();
-        }
-        private void actualizarRutas()
-        {
-            mapita.Overlays[1].Routes.Clear();
-            mapita.Overlays.Add(grafito.setRutas(mapita.Overlays[1]));
-            mapita.Zoom = mapita.Zoom + 1;
-            mapita.Zoom = mapita.Zoom - 1;
         }
 
         private PointLatLng getPosicion(double lat, double lng)
@@ -43,33 +40,6 @@ namespace ProyectoEstructuras
             return new PointLatLng(lat, lng);
         }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-                var marker = markerOverLay.Markers[markerPoss];
-                marker.ToolTipMode = MarkerTooltipMode.Always;
-                marker.ToolTipText = "Lugar: "+textBox1.Text;
-                dataGridView1.Rows.Add(textBox1.Text, marker.Position.Lat, marker.Position.Lng);
-                markerPoss++;
-                grafito.agregarVertice(new Ubicacion(textBox1.Text, marker.Position.Lat, marker.Position.Lng));
-                //dataGridView2.Rows.Add(textBox1.Text);
-                dataGridView3.Rows.Add(textBox1.Text, marker.Position.Lat, marker.Position.Lng);
-                Limpiar(); 
-        }
-
-        private void Limpiar()
-        {
-            textBox1.Text = "";
-            textBox2.Text = "";
-            textBox3.Text = "";
-            textBox4.Text = "";
-        }
-        private void dataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
-        {
-            var index = e.RowIndex;
-            markerPoss = index;
-            markerName = dataGridView1.Rows[e.RowIndex].Cells[0].Value.ToString();
-            textBox1.Text = markerName;
-        }
 
         private void dataGridView3_CellClick(object sender, DataGridViewCellEventArgs e)
         {
@@ -87,8 +57,6 @@ namespace ProyectoEstructuras
         {
             double lat = mapita.FromLocalToLatLng(e.X, e.Y).Lat;
             double lng = mapita.FromLocalToLatLng(e.X, e.Y).Lng;
-            textBox2.Text = lat.ToString();
-            textBox3.Text = lng.ToString();
 
             var ubicacion = new Ubicacion(lat,lng);
 
@@ -96,9 +64,8 @@ namespace ProyectoEstructuras
 
             mapita.Refresh();
             mapita.ReloadMap();
-            //markerOverLay = new GMapOverlay("Marcador");
             var marker = new GMarkerGoogle(getPosicion(lat, lng), GMarkerGoogleType.green);
-                markerOverLay.Markers.Add(marker);
+            markerOverLay.Markers.Add(marker);
             markerOverLay.IsVisibile = true;
             Console.WriteLine(String.Format("Marker {0} was clicked.", "hello"));
         }
@@ -108,34 +75,41 @@ namespace ProyectoEstructuras
             var id = Int64.Parse(marker.Tag.ToString());
             LocationMarker locationMarker;
             dictionary.TryGetValue(id, out locationMarker);
-            List<Ubicacion> adyacencias = grafito.ObtenerVerticeAdyacentes(locationMarker.Location.descripcion);
+            var adyacencias = grafito.ObtenerPathsAdyacentes(locationMarker.Location.id);
             dataGridView3.Rows.Clear();
-            foreach (var ubicacion1 in adyacencias)
+            markerHighlight.Clear();
+            capRoute.Clear();
+            foreach (var path in adyacencias)
             {
-                dictionary.TryGetValue(ubicacion1.id, out locationMarker);
-                dataGridView3.Rows.Add("0", ubicacion1.id);
+                Ubicacion ubicacion1;
+
+                if(path.original.valor.id == id)
+                {
+                    ubicacion1 = path.destino.valor;
+                }
+                else
+                {
+                    ubicacion1 = path.original.valor;
+                }
+
+                dataGridView3.Rows.Add(path.valor, ubicacion1.id);
+                var newMarker = new GmapMarkerWithLabel(ubicacion1.posicion, "", GMarkerGoogleType.red);
+                newMarker.Tag = ubicacion1.descripcion;
+                markerHighlight.Markers.Add(newMarker);
+
+                var list = new List<PointLatLng>();
+                list.Add(path.original.valor.posicion);
+                list.Add(path.destino.valor.posicion);
+                var polygon = new GMapPolygon(list, path.valor.ToString());
+                polygon.Stroke = new Pen(Color.Red, 1);
+                capRoute.Polygons.Add(polygon);
+
             }
 
             mapita.Refresh();
         }
 
-        private void button2_Click_1(object sender, EventArgs e)
-        {
-            try
-            {
-                //buscar
-                grafito.agregarPath(dataGridView1.Rows[posA].Cells[0].Value.ToString(), dataGridView3.Rows[posB].Cells[0].Value.ToString(), textBox4.Text);
-                mapita.Zoom = mapita.Zoom + 1;
-                mapita.Zoom = mapita.Zoom - 1;
-                //actualizarRutas();
-                aniadirPathAlGrid();
-                Limpiar();
-            }
-            catch (Exception exception)
-            {
-                MessageBox.Show("Lo siento :( ocurrio un error intente de nuevo");
-            }
-        }
+      
         private void Form1_Load_1(object sender, EventArgs e)
         {
             mapita.DragButton = MouseButtons.Left;
@@ -146,17 +120,14 @@ namespace ProyectoEstructuras
             mapita.MaxZoom = 24;
             mapita.Zoom = 9;
             mapita.AutoScroll = true;
-            this.markerOverLay = new GMapOverlay("Markers");
+            mapita.Overlays.Add(pathsLayer);
             mapita.Overlays.Add(capRoute);
-            mapita.Overlays.Add(this.markerOverLay);
+            mapita.Overlays.Add(markerOverLay);
+            mapita.Overlays.Add(markerHighlight);
             grafito = new Grafo();
-            // updateMarkers();
             mapita.Zoom = mapita.Zoom + 1;
             mapita.Zoom = mapita.Zoom - 1;
-            textBox2.Enabled = false;
-            textBox3.Enabled = false;
             mapita.OnMarkerClick += gmap_OnMarkerClick;
-            //mapita.MouseClick += mapita_MouseClick_1;
 
             connector = Conector.instance;
             
@@ -169,6 +140,12 @@ namespace ProyectoEstructuras
 
                 grafito.agregarVertice(ubicacion);
                 dictionary.Add(ubicacion.id, new LocationMarker(ubicacion, marker));
+
+
+                var item = new ComboboxItem(ubicacion.descripcion, ubicacion);
+
+                originSelector.Items.Add(item);
+                stopSelector.Items.Add(item);
             }
 
             foreach (var link in connector.GetPaths())
@@ -179,10 +156,10 @@ namespace ProyectoEstructuras
                 LocationMarker locationMarker;
 
                 var list = new List<PointLatLng>();
-                
-                dictionary.TryGetValue(link.origen, out locationMarker);
+
+                locationMarker = dictionary[link.origen];
                 ubicacion1 = locationMarker.Location;
-                dictionary.TryGetValue(link.destino, out locationMarker);
+                locationMarker = dictionary[link.destino];
                 ubicacion2 = locationMarker.Location;
 
                 list.Add(ubicacion1.posicion);
@@ -190,10 +167,10 @@ namespace ProyectoEstructuras
 
                 var polygon = new GMapPolygon(list, "");
 
-                grafito.agregarPath(ubicacion1.descripcion, ubicacion2.descripcion, polygon.Distance.ToString());
+                grafito.agregarPath(ubicacion1.id, ubicacion2.id, polygon.Distance);
 
                 
-                capRoute.Polygons.Add(polygon);
+                pathsLayer.Polygons.Add(polygon);
             }
 
             mapita.Refresh();
@@ -205,16 +182,13 @@ namespace ProyectoEstructuras
             posA = e.RowIndex;
             mapita.Position = markerOverLay.Markers[posA].Position;
         }
+
         private void dataGridView3_CellClick_1(object sender, DataGridViewCellEventArgs e)
         {
             posB = e.RowIndex;
             mapita.Position = markerOverLay.Markers[posB].Position;
         }
-        private void dataGridView2_MouseDoubleClick(object sender, MouseEventArgs e)
-        {
-            actualizarRutas();
-            aniadirPathAlGrid();
-        }
+
         private void aniadirPathAlGrid()
         {
             
@@ -230,6 +204,89 @@ namespace ProyectoEstructuras
             {
                 Location = ubicacion;
                 Marker = mapMarker;
+            }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            long inicio, fin;
+            var item = (ComboboxItem)originSelector.SelectedItem;
+            inicio = ((Ubicacion)item.Value).id;
+            item = (ComboboxItem)stopSelector.SelectedItem;
+            fin = ((Ubicacion)item.Value).id;
+
+            var ruta = grafito.RutaMasCorta(fin, inicio);
+
+            markerHighlight.Clear();
+            routeDataGrid.Rows.Clear();
+            capRoute.Clear();
+
+            var marker = new GmapMarkerWithLabel(dictionary[inicio].Location.posicion, "", GMarkerGoogleType.blue);
+            markerHighlight.Markers.Add(marker);
+            marker = new GmapMarkerWithLabel(dictionary[fin].Location.posicion, "", GMarkerGoogleType.blue);
+            markerHighlight.Markers.Add(marker);
+
+            var anterior = inicio;
+            Path path;
+
+            var distanciaTotal = 0.0;
+
+            foreach (var punto in ruta)
+            {
+                if(punto != anterior)
+                {
+                    path = grafito.BuscarPath(anterior, punto);
+                    DrawLine(path);
+                    marker = new GmapMarkerWithLabel(dictionary[punto].Location.posicion, "", GMarkerGoogleType.red);
+                    markerHighlight.Markers.Add(marker);
+                    routeDataGrid.Rows.Add(dictionary[anterior].Location.descripcion, dictionary[punto].Location.descripcion, path.valor);
+                    distanciaTotal += path.valor;
+                    anterior = punto;
+                }
+            }
+
+            path = grafito.BuscarPath(anterior, fin);
+            DrawLine(path);
+            distanciaTotal += path.valor;
+
+            distanciaLabel.Text = distanciaTotal.ToString();
+
+
+            routeDataGrid.Rows.Add(dictionary[anterior].Location.descripcion, dictionary[fin].Location.descripcion, path.valor);
+
+
+        }
+
+        private void DrawLine(Path path)
+        {
+            var list = new List<PointLatLng>()
+                    {
+                        path.original.valor.posicion,
+                        path.destino.valor.posicion
+                    };
+
+            var polygon = new GMapPolygon(list, "");
+
+            polygon.Stroke = new Pen(Color.Red);
+
+            capRoute.Polygons.Add(polygon);
+        }
+
+        private class ComboboxItem
+        {
+            public string Text { get; set; }
+            public object Value { get; set; }
+
+            public ComboboxItem() : this(null, null) { }
+            public ComboboxItem(string text, object value)
+            {
+                Text = text;
+                Value = value;
+            }
+
+            public override string ToString()
+            {
+                return Text;
             }
         }
     }

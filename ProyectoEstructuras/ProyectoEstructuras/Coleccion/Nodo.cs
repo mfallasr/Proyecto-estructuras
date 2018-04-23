@@ -1,84 +1,21 @@
 ﻿using ProyectoEstructuras.entidades;
 using System;
+using System.Collections.Generic;
 
 namespace ProyectoEstructuras.Coleccion
 {
     public class Nodo
     {
-        public Path predecessor, sucessor;
-        public Nodo siguienteNodo;
-        public Ubicacion valor;
+        public List<Nodo> vecinos { get; set; }
+        public Ubicacion valor { get; set; }
+        public List<Path> adyacentes { get; set; }
 
         public Nodo(Ubicacion val)
         {
-            this.valor = val;
+            valor = val;
+            vecinos = new List<Nodo>();
+            adyacentes = new List<Path>();
         }
-        public void setPredecessor(Path predecessor)
-        {
-            this.predecessor = predecessor;
-        }
-
-        public void setSucessor(Path sucessor)
-        {
-            if (this.getSucessor() == null)
-            {
-                this.sucessor = sucessor;
-            }
-            else
-            {
-                Path aux = this.getSucessor();
-                while (aux != null)
-                {
-                    if (aux.getSiguiente() == null)
-                    {
-                        aux.setSiguiente(sucessor);
-                        break;
-                    }
-                    aux = aux.getSiguiente();
-                }
-            }
-        }
-
-        public void setSiguienteNodo(Nodo sigNodo)
-        {
-            this.siguienteNodo = sigNodo;
-        }
-
-        public void setValor(Ubicacion val)
-        {
-            this.valor = val;
-        }
-
-        public Path getPredecessor()
-        {
-
-            return predecessor;
-        }
-
-        public Path getSucessor()
-        {
-            return sucessor;
-        }
-
-        public Nodo getSiguienteNodo()
-        {
-            return siguienteNodo;
-        }
-
-        public Ubicacion getValor()
-        {
-            return valor;
-        }
-        public String mostrarPath()
-        {
-            return this.sucessor.ToString();
-        }
-
-        public String toString()
-        {
-            String info = "-------------Vertice-------------------\n";
-            info += "Value: " + this.valor + "\n";
-            return info;
-        }
+        
     }
 }
